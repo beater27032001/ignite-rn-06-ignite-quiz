@@ -1,0 +1,58 @@
+- Instalar o reanimated pelo expo: npx expo install react-native-reanimate
+
+- Adicionar o puglin: plugins: ["react-native-reanimated/plugin"]
+
+- 3 pilares: useSharedValue, useAnimatedStyles e Componente Animado
+
+- useSharedValue: Utiliza ele para criar variavel para criar conteudo que
+vai utilizar nas animações. Pq o reanimated renderiza as animações na thread de interface do usuário,
+tb precisamos de um tipo especial para guardar um valor que seja reativo a animação(ou seja, se o valor
+muda a animação muda tb)
+
+-  const scale = useSharedValue(1);
+
+- useAnimatedStyles: Utilizamos ele para criar os estilos animados, uma estilzação reativa ao shared
+value
+const animatedContainerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }]
+    }
+  })
+
+- usar o Animated para aplicar as animações: <Animated.View (Utilize o animatedContainerStyle como um
+estilo)
+
+- Para ver o estilo reagindo ao useSharedValue vamos usar o Pressable e o pressable props, pois ele tem
+mais opções
+
+- Exemplo de animação reativa:
+    function onPressIn() {
+    scale.value = 1.1
+  }
+
+  function onPressOut() {
+    scale.value = 1
+  }
+
+  <Pressable {...rest} onPressIn={onPressIn} onPressOut={onPressOut}>
+
+- Podemos utilizar algum modificador para deixar a animação mais suave: with...(complete com o sufixo)
+function onPressIn() {
+    scale.value = withSpring(1.1)
+}
+
+function onPressOut() {
+    scale.value = withSpring(1)
+}
+
+- Podemos tb passar um objeto como segundo parametro para definir o tipo de transição/animação
+function onPressIn() {
+    scale.value = withTiming(1.1, {easing: Easing.bounce})
+  }
+
+- Vamos usar a interpolação de cores para deixar mais suave essa transição
+  const checked = useSharedValue(0)
+
+useEffect(() => {
+    checked.value = isChecked ? 1 : 0
+  },[isChecked])
