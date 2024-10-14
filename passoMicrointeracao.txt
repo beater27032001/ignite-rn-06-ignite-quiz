@@ -1,0 +1,76 @@
+- Vamos trabalhar agora com gestos:
+npx expo install react-native-gesture-handler
+
+- Temos que importar um componente principal e envolver toda nossa aplicação nele:
+import 'react-native-gesture-handler';
+import {GestureHandlerRootView} from 'react-native-gesture-handler'
+<GestureHandlerRootView style={{ flex: 1 }}>
+    <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+    />
+    <Routes />
+</GestureHandlerRootView>
+
+- Vamos agora no histórico aplicar um gesto, para deletar um historico vamos fazer ele arrastar pro lado para deletar
+import { Swipeable } from "react-native-gesture-handler";
+
+            <Swipeable
+              overshootLeft={false} // para que eu arraste até o objeto
+              containerStyle={styles.swipeContainer} // aplicar estilo no container
+              // quando eu arrastar para o lado, o lado esquerdo vai aparecer algo
+              renderLeftActions={() => (
+                <Pressable style={styles.swipeblaRemove}>
+                  <Trash size={32} color={THEME.COLORS.GREY_100} />
+                </Pressable>
+              )}
+            >
+              <HistoryCard data={item} />
+            </Swipeable>
+
+- Agora vamos apenas voltar com a opção de deletar:
+                <Pressable
+                  style={styles.swipeblaRemove}
+                  onPress={() => handleRemove(item.id)}
+                >
+
+- Vamos fazer com que se a pessoa nao quiser deletar o objeto feche automaticamente:
+    const swipeblaRefs = useRef<Swipeable[]>([]); // para anotar a referencia de cada objeto
+    
+    Vamos passar isso dentro do Swipeable:
+        ref={(ref) => {
+            if(ref){
+                swipeableRefs.current.push(ref);
+            }
+        }} 
+
+    Depois vamos adicionar um index como novo parametro, e mandar ele fechar antes do alerta:
+        function handleRemove(id: string, index: number) {
+            swipeableRefs.current?.[index].close();
+            ...
+        }
+    
+    Lembrar de passar também como parametro no nosso map:
+        {history.map((item, index)...)}
+
+- Agora vamos fazer com que ja aparece a opção de deletar sem precisa tocar no item
+            <Swipeable
+              ref={(ref) => {
+                if (ref) {
+                  swipeableRefs.current.push(ref);
+                }
+              }}
+              overshootLeft={false}
+              containerStyle={styles.swipeContainer}
+              leftThreshold={10} // função para saber a "abertura"
+              renderRightActions={() => null} // função para nao deixar ele deslizar para o outro lado
+              onSwipeableOpen={() => handleRemove(item.id, index)} // quando ele abrir vai aparecer a opção pra deletar
+              renderLeftActions={() => (
+                <View style={styles.swipeblaRemove}>
+                  <Trash size={32} color={THEME.COLORS.GREY_100} />
+                </View>
+              )}
+            >
+              <HistoryCard data={item} />
+            </Swipeable>

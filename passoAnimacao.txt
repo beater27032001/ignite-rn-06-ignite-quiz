@@ -1,0 +1,250 @@
+- Instalar o reanimated pelo expo: npx expo install react-native-reanimate
+
+- Adicionar o puglin: plugins: ["react-native-reanimated/plugin"]
+
+- 3 pilares: useSharedValue, useAnimatedStyles e Componente Animado
+
+- useSharedValue: Utiliza ele para criar variavel para criar conteudo que
+vai utilizar nas animações. Pq o reanimated renderiza as animações na thread de interface do usuário,
+tb precisamos de um tipo especial para guardar um valor que seja reativo a animação(ou seja, se o valor
+muda a animação muda tb)
+
+// Level
+
+-  const scale = useSharedValue(1);
+
+- useAnimatedStyles: Utilizamos ele para criar os estilos animados, uma estilzação reativa ao shared
+value
+const animatedContainerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }]
+    }
+  })
+
+- usar o Animated para aplicar as animações: <Animated.View (Utilize o animatedContainerStyle como um
+estilo)
+
+- Para ver o estilo reagindo ao useSharedValue vamos usar o Pressable e o pressable props, pois ele tem
+mais opções
+
+- Exemplo de animação reativa:
+    function onPressIn() {
+    scale.value = 1.1
+  }
+
+  function onPressOut() {
+    scale.value = 1
+  }
+
+  <Pressable {...rest} onPressIn={onPressIn} onPressOut={onPressOut}>
+
+- Podemos utilizar algum modificador para deixar a animação mais suave: with...(complete com o sufixo)
+function onPressIn() {
+    scale.value = withSpring(1.1)
+}
+
+function onPressOut() {
+    scale.value = withSpring(1)
+}
+
+- Podemos tb passar um objeto como segundo parametro para definir o tipo de transição/animação
+function onPressIn() {
+    scale.value = withTiming(1.1, {easing: Easing.bounce})
+  }
+
+- Vamos usar a interpolação de cores para deixar mais suave essa transição, vamos importar o interpolateColor
+  const checked = useSharedValue(0)
+
+useEffect(() => {
+  checked.value = isChecked ? 1 : 0
+},[isChecked])
+
+const animatedContainerStyle = useAnimatedStyle(() => {
+  return {
+    transform: [{ scale: scale.value }],
+      backgroundColor: interpolateColor(
+        checked.value,
+        [0, 1],
+        ['transparent', COLOR]
+      ),
+    };
+});
+
+- Animando o Texo também: 
+<Animated.Text
+  style={[
+    styles.title,
+    animatedTextStyle
+  ]}
+>
+  {title}
+</Animated.Text>
+
+const animatedTextStyle = useAnimatedStyle(() => {
+  return {
+    color: interpolateColor(checked.value, [0, 1], [COLOR, THEME.COLORS.GREY_100]),
+  };
+});
+
+- Por padrão o pressable não aceita o animated mas vamos criar um componente: 
+const PressableAnimated = Animated.createAnimatedComponent(Pressable);
+
+<PressableAnimated
+      {...rest}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      style={[styles.container, animatedContainerStyle, { borderColor: COLOR }]}
+    >
+      <Animated.Text style={[styles.title, animatedTextStyle]}>
+        {title}
+      </Animated.Text>
+    </PressableAnimated>
+
+- Perceba que não precisamos da Animated.View
+
+// ProgressBar
+
+- Vamos animar a barra de progresso do quiz:
+  const sharedProgress = useSharedValue(percentage)
+
+- Vamos usar o useEffect para monitorar a mudança:
+  useEffect(()=>{
+    sharedProgress.value = withTiming(percentage)
+  },[current])
+
+- E agora criar o estilo animado
+const styleAnimated = useAnimatedStyle(() => {
+  return {
+    width: `${sharedProgress.value}%`,
+  };
+});
+
+-Lembrar de adicionar o Animated:
+<Animated.View style={[styles.progress, styleAnimated]} />
+
+// QUIZ
+
+- Vamos fazer uma animação no card do quiz para que se pessou escolher a opção errada, aconteça algo
+  const shake = useSharedValue(0)
+
+- Vamos pegar uma opção que faça a tela se mexer de um lado para o outro:
+  withSequence
+  function shakeAnimation() {
+    shake.value = withSequence(withTiming(3), withTiming(0));
+  }
+
+- Como vamos aplicar caso alguem erre a animação, vamos aplica-la diretamente dentro da confirmação da questão
+  async function handleConfirm() {
+    if (alternativeSelected === null) {
+      return handleSkipConfirm();
+    }
+
+    if (quiz.questions[currentQuestion].correct === alternativeSelected) {
+      setPoints((prevState) => prevState + 1);
+    }else{
+      shakeAnimation()
+    }
+
+    setAlternativeSelected(null);
+
+    handleNextQuestion();
+  }
+
+- Agora vamos criar nosso estilo animado:
+  const shakeStyleAnimated = useAnimatedStyle(() => {
+    return {
+      
+    };
+  });
+
+- Agora vamos usar o interpolate para interpolar os valores da animação para ir para a esuqerda e para a direita:
+  const shakeStyleAnimated = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: interpolate(
+            shake.value,
+            [0, 0.5, 1, 1.5, 2, 2.5, 3],
+            [0, -15, 0, 15, 0, -15, 0]
+          ),
+        },
+      ],
+    };
+  });
+
+// QUIZ CARD
+
+- Vamos fazer a animação para cada item da FlatList
+const TouchableOpacityAnimated = Animated.createAnimatedComponent(TouchableOpacity);
+
+<TouchableOpacityAnimated
+      entering={FadeInUp.delay(100)} //animação de entrada
+      exiting={FadeOut} //animação de saida
+      style={styles.container}
+      {...rest}
+    >
+
+- Mas estão vindo todos os cards de uma vez só, então vamos add um index na FlatLista na nossa home
+      <FlatList
+        data={quizzes}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <QuizCard
+            index={index}
+            data={item}
+            onPress={() => navigate("quiz", { id: item.id })}
+          />
+        )}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.cards}
+      />
+
+- Agora vamos add o index na tipagem e recuperar ele no componente, e depois passamos o index como parametro para cada obj ter um delay:
+entering={FadeInUp.delay(index * 100)}
+
+// KEYFRAME
+
+- O keyframe serve para nós criarmos nossa propria animação
+
+// Question
+
+- Criei 2 keyframes, um de entrada e o outro de saida para o componente question:
+  const entereingKeyframe = new Keyframe({
+    0: {
+      opacity: 0,
+      transform: [{ translateX: SCREEN_WIDTH }, { rotate: "90deg" }],
+    },
+    70: {
+      opacity: 0.3,
+    },
+    100: {
+      opacity: 1,
+      transform: [{ translateX: 0 }, { rotate: "0deg" }],
+    },
+  });
+
+  const exitingKeyframe = new Keyframe({
+    from: {
+      opacity: 1,
+      transform: [{ translateX: 0 }, { rotate: "0deg" }],
+    },
+    to: {
+      opacity: 0,
+      transform: [{ translateX: SCREEN_WIDTH * (-1) }, { rotate: "-90deg" }],
+    },
+  });
+
+// Animação de Layout ao deletar o histórico
+
+- Vamos animar o histórico agora:
+          <Animated.View
+            key={item.id}
+            layout={Layout.springify()}
+            entering={SlideInRight}
+            exiting={SlideOutRight}
+          >
+            <TouchableOpacity onPress={() => handleRemove(item.id)}>
+              <HistoryCard data={item} />
+            </TouchableOpacity>
+          </Animated.View>

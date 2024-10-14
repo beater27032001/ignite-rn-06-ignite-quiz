@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { THEME } from '../styles/theme';
 
 import { AppRoutes } from './app.routes';
+import React from 'react';
 
 export function Routes() {
   return (
